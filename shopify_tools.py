@@ -129,3 +129,34 @@ def get_orders(limit: int = 10, status: str = "any") -> List[Dict[str, Any]]:
                 for order in orders]
     except Exception as e:
         return {"error": f"Failed to fetch orders: {str(e)}"}
+    
+@tool
+def update_product_inventory(variant_id: int, quantity: int) -> Dict[str, Any]:
+    """
+    Update inventory quantity for a product variant.
+    
+    Args:
+        variant_id: ID of the product variant to update
+        quantity: New inventory quantity
+    
+    Returns:
+        Updated product variant dictionary with id, title, and inventory_quantity
+    """
+    try:
+        variant = shopify.Variant.find(variant_id)
+        if not variant:
+            return {"error": "Variant not found"}
+        
+        variant.inventory_quantity = quantity
+        if variant.save():
+            return {
+                "success": True,
+                "variant_id": variant.id,
+                "variant_title": variant.title,
+                "new_quantity": variant.inventory_quantity,
+                "message": f"Inventory updated successfully for variant {variant_id}"
+            }
+        else:
+            return {"error": "Failed to update inventory"}
+    except Exception as e:
+        return {"error": f"Failed to update inventory for variant {variant_id}: {str(e)}"}
