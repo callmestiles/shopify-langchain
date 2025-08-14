@@ -171,3 +171,52 @@ def update_product_inventory(variant_id: int, quantity: int) -> Dict[str, Any]:
             return {"error": "Failed to update inventory"}
     except Exception as e:
         return {"error": f"Failed to update inventory for variant {variant_id}: {str(e)}"}
+    
+    
+@tool
+def create_product(title: str, body_html: Optional[str] = None, vendor: Optional[str] = None, product_type: Optional[str] = None, price: Optional[float] = None, tags: Optional[List[str]] = None) -> Dict[str, Any]:
+    """
+    Create a new product in the Shopify store.
+    
+    Args:
+        title: Title of the product
+        body_html: Description of the product (optional)
+        vendor: Vendor of the product (optional)
+        product_type: Type of the product (optional)
+        price: Price of the product (optional)
+        tags: List of tags for the product (optional)
+
+    Returns:
+        Dictionary with the created product's id and other details or an error message
+    """
+    try:
+        new_product = shopify.Product()
+        new_product.title = title
+        new_product.body_html = body_html
+        new_product.vendor = vendor
+        new_product.product_type = product_type
+        new_product.tags = tags
+        
+        variant = shopify.Variant()
+        variant.price = price if price is not None else 0.0
+        variant.inventory_quantity = 0  # Default inventory quantity
+        new_product.variants = [variant]
+
+        if new_product.save():
+            return {
+               "success": True,
+               "product": {
+                   "id": new_product.id,
+                   "title": new_product.title,
+                   "body_html": new_product.body_html,
+                   "vendor": new_product.vendor,
+                   "product_type": new_product.product_type,
+                   "tags": new_product.tags
+               },
+               "message": "Product created successfully"
+            }
+        else:
+            return {"error": "Failed to create product"}
+    except Exception as e:
+        return {"error": f"Failed to create product: {str(e)}"}
+
