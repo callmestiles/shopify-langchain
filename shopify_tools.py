@@ -92,3 +92,40 @@ def get_customers(limit: int = 10) -> List[Dict[str, Any]]:
                 for customer in customers]
     except Exception as e:
         return {"error": f"Failed to fetch customers: {str(e)}"}
+    
+@tool
+def get_orders(limit: int = 10, status: str = "any") -> List[Dict[str, Any]]:
+    """
+    Retrieve orders from Shopify store.
+    
+    Args:
+        limit: Maximum number of orders to retrieve (default: 10)
+        status: Order status to filter by (default: "any"), Other options (open, closed, cancelled)
+    
+    Returns:
+        List of order dictionaries including id, email, total_price, and created_at
+    """
+    try:
+        params = {"limit": limit}
+        if status != "any":
+            params["status"] = status
+            
+        orders = shopify.Order.find(**params)
+        return [{
+                "id": order.id, 
+                "email": order.email, 
+                "total_price": order.total_price, 
+                "created_at": str(order.created_at), 
+                "financial_status": order.financial_status,
+                "fulfillment_status": order.fulfillment_status,
+                "created_at": str(order.created_at),
+                "customer": {
+                    "id": order.customer.id if order.customer else None,
+                    "email": order.customer.email if order.customer else None,
+                    "first_name": order.customer.first_name if order.customer else None,
+                    "last_name": order.customer.last_name if order.customer else None
+                } if order.customer else None
+                } 
+                for order in orders]
+    except Exception as e:
+        return {"error": f"Failed to fetch orders: {str(e)}"}
