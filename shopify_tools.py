@@ -3,13 +3,25 @@ from langchain_core.tools import tool
 from typing import List, Dict, Any, Optional
 import os
 from datetime import datetime
+from dotenv import load_dotenv
 
 # Configure shopify API
-def setup_shopify_session(shop_url: str, access_token: str):
-    """Initialize Shopify session"""
-    shopify.ShopifyResource.set_site(f"https://{shop_url}.myshopify.com/admin/api/2023-10")
-    shopify.ShopifyResource.headers["X-Shopify-Access-Token"] = access_token
- 
+def setup_shopify_session_from_env():
+    """Initialize Shopify session from environment variables."""
+    load_dotenv()
+    shop_url = os.getenv("SHOPIFY_SHOP_URL")
+    access_token = os.getenv("SHOPIFY_ACCESS_TOKEN")
+    if not shop_url or not access_token:
+        raise ValueError("SHOPIFY_SHOP_URL or SHOPIFY_ACCESS_TOKEN not set in environment")
+
+    api_version = "2025-01"
+    if not shop_url.endswith('.myshopify.com'):
+        shop_url = f"{shop_url}.myshopify.com"
+    api_url = f"https://{shop_url}/admin/api/{api_version}/"
+
+    shopify.ShopifyResource.set_site(api_url)
+    shopify.ShopifyResource.headers['X-Shopify-Access-Token'] = access_token
+    
 @tool
 def get_products(limit: int = 10) -> List[Dict[str, Any]]:
     """
@@ -19,9 +31,10 @@ def get_products(limit: int = 10) -> List[Dict[str, Any]]:
         limit: Maximum number of products to retrieve (default: 10)
     
     Returns:
-        List of product dictionaries with id, title, handle, and status
+        List of product dictionaries including details like id, title, handle, and status
     """
     try:
+        setup_shopify_session_from_env()
         products = shopify.Product.find(limit=limit)
         return [{
                 "id": product.id, 
@@ -46,9 +59,10 @@ def get_product_by_id(product_id: int) -> Dict[str, Any]:
         product_id: ID of the product to retrieve
     
     Returns:
-        Product dictionary with id, title, handle, and status
+        Product dictionary with details including id, title, handle, and status
     """
     try:
+        setup_shopify_session_from_env()
         product = shopify.Product.find(product_id)
         if not product:
             return {"error": "Product not found"}
@@ -85,9 +99,10 @@ def get_customers(limit: int = 10) -> List[Dict[str, Any]]:
         limit: Maximum number of customers to retrieve (default: 10)
     
     Returns:
-        List of customer dictionaries with id, email, first_name, last_name, and created_at
+        List of customer dictionaries with details including id, email, first_name, last_name, and created_at
     """
     try:
+        setup_shopify_session_from_env()
         customers = shopify.Customer.find(limit=limit)
         return [{
                 "id": customer.id, 
@@ -117,6 +132,7 @@ def get_orders(limit: int = 10, status: str = "any") -> List[Dict[str, Any]]:
         List of order dictionaries including id, email, total_price, and created_at
     """
     try:
+        setup_shopify_session_from_env()
         params = {"limit": limit}
         if status != "any":
             params["status"] = status
@@ -154,6 +170,7 @@ def update_product_inventory(variant_id: int, quantity: int) -> Dict[str, Any]:
         Updated product variant dictionary with id, title, and inventory_quantity
     """
     try:
+        setup_shopify_session_from_env()
         variant = shopify.Variant.find(variant_id)
         if not variant:
             return {"error": "Variant not found"}
@@ -190,6 +207,7 @@ def create_product(title: str, body_html: Optional[str] = None, vendor: Optional
         Dictionary with the created product's id and other details or an error message
     """
     try:
+        setup_shopify_session_from_env()
         new_product = shopify.Product()
         new_product.title = title
         new_product.body_html = body_html
@@ -219,4 +237,14 @@ def create_product(title: str, body_html: Optional[str] = None, vendor: Optional
             return {"error": "Failed to create product"}
     except Exception as e:
         return {"error": f"Failed to create product: {str(e)}"}
+    
+    
+SHOPIFY_TOOLS = [
+    get_products,
+    get_product_by_id,
+    update_product_inventory,
+    create_product,
+    get_orders,
+    get_customers
+]
 
