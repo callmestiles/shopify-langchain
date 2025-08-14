@@ -59,6 +59,17 @@ def get_product_by_id(product_id: int) -> Dict[str, Any]:
             "status": product.status,
             "vendor": product.vendor,
             "product_type": product.product_type,
+            "tags": product.tags,
+            "variants":  {
+                {
+                    "id": variant.id,
+                    "title": variant.title,
+                    "price": variant.price,
+                    "sku": variant.sku,
+                    "inventory_quantity": variant.inventory_quantity
+                }
+                for variant in product.variants
+            },
             "created_at": str(product.created_at),
             "updated_at": str(product.updated_at)
         }
